@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Interactive data visualization module for CrowdStrike opportunity analysis
+Interactive data visualization module for enterprise sales opportunity analysis
 """
 import streamlit as st
 import pandas as pd

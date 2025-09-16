@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 
 # Security notice
 st.set_page_config(
-    page_title="CrowdStrike - Secure Synthetic Data Analysis",
+    page_title="Enterprise Sales Opportunity Scoring",
     page_icon="🛡️",
     layout="wide"
 )
 
 def main():
-    st.title("🛡️ CrowdStrike Secure Synthetic Data Analysis")
+    st.title("📊 Enterprise Sales Opportunity Scoring System")
     st.markdown("**Secure Synthetic Salesforce Opportunity Data Generator with AI-Powered Scoring**")
     
     # Initialize database

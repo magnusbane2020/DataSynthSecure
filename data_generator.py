@@ -35,11 +35,11 @@ class SyntheticDataGenerator:
             "Nike Inc.", "Ford Motor Company", "General Motors Company"
         ]
         
-        # CrowdStrike products/services
-        self.crowdstrike_products = [
-            "Falcon Platform", "Falcon Prevent", "Falcon Insight", "Falcon Complete",
-            "Falcon X", "Falcon Intelligence", "Falcon OverWatch", "Falcon Discover",
-            "Falcon Spotlight", "CrowdStrike Store", "Professional Services"
+        # Enterprise cybersecurity products/services
+        self.security_products = [
+            "Security Platform", "Endpoint Protection", "Threat Intelligence", "Complete Security Suite",
+            "Security Analytics", "Threat Intelligence", "Advanced Monitoring", "Asset Discovery", 
+            "Vulnerability Management", "Security Marketplace", "Professional Services"
         ]
         
         # Sales stages
@@ -84,7 +84,7 @@ class SyntheticDataGenerator:
             for i in range(batch_start, batch_end):
                 # Basic opportunity data
                 company = random.choice(self.public_companies)
-                product = random.choice(self.crowdstrike_products)
+                product = random.choice(self.security_products)
                 
                 # Generate unique opportunity name
                 opp_name = f"{company} - {product} Implementation"

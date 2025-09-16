@@ -1,6 +1,6 @@
 # Overview
 
-This project is a secure synthetic data analysis application built for CrowdStrike that generates fake Salesforce opportunity data and scores it using AI. The application follows a three-step workflow: generating synthetic sales opportunity data, scoring opportunities using OpenAI's GPT model with MEDDPICC/BANT frameworks, and generating executive reports with business insights. The system emphasizes security by using only synthetic data, secure API key handling, and comprehensive logging with sensitive data filtering.
+This project is a secure synthetic data analysis application that generates synthetic Salesforce opportunity data and scores it using AI. The application follows a three-step workflow: generating synthetic sales opportunity data, scoring opportunities using OpenAI's GPT model with MEDDPICC/BANT frameworks, and generating executive reports with business insights. The system emphasizes security by using only synthetic data, secure API key handling, and comprehensive logging with sensitive data filtering.
 
 # User Preferences
 

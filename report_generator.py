@@ -19,11 +19,11 @@ class ExecutiveReportGenerator:
         analysis = self._analyze_scores(scores_df, synthetic_df)
         
         # Generate report sections
-        report = f"""# CrowdStrike Executive Report: AI-Powered Opportunity Scoring Analysis
+        report = f"""# Executive Report: AI-Powered Opportunity Scoring Analysis
 
 **Report Date:** {self.report_date}  
 **Classification:** Internal Use Only - Synthetic Data Analysis  
-**Prepared for:** CrowdStrike Leadership Team
+**Prepared for:** Leadership Team
 
 ---
 
