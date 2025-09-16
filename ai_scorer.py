@@ -25,7 +25,7 @@ class OpportunityScorer:
         self.concurrent_batches = 3  # Number of concurrent API calls
         self.max_retries = 2  # Reduced retries for speed
         self.base_delay = 0.5  # Faster retry delay
-        self.timeout = 20  # Reduced timeout for faster failure detection
+        self.timeout = 90  # Increased timeout for batch processing (OpenAI can take 30-60s)
         
         # Secure API key handling
         api_key = os.environ.get("OPENAI_API_KEY")

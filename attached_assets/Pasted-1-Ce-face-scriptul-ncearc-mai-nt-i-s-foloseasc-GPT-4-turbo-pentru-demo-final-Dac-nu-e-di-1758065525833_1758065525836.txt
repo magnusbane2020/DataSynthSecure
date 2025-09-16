@@ -1,0 +1,84 @@
+1. Ce face scriptul
+
+Încearcă mai întâi să folosească GPT-4 turbo (pentru demo final).
+
+Dacă nu e disponibil sau dacă vrei să economisești → cade automat pe GPT-3.5 turbo.
+
+Poți controla alegerea printr-o variabilă de mediu OPENAI_MODEL.
+
+🔹 2. Codul de fallback (ai_scorer.py sau un modul separat)
+import os
+import openai
+
+# citește modelul din variabilele de mediu
+PREFERRED_MODEL = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
+
+# fallback listă (poți adăuga și gpt-4o-mini dacă ai acces)
+MODEL_FALLBACKS = ["gpt-4-turbo", "gpt-3.5-turbo"]
+
+def get_ai_response(prompt: str):
+    last_error = None
+    for model in MODEL_FALLBACKS:
+        try:
+            print(f"Trying model: {model}")
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are an expert sales opportunity evaluator using MEDDPICC and BANT frameworks. Score and explain professionally."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=500
+            )
+            return response["choices"][0]["message"]["content"], model
+        except Exception as e:
+            print(f"⚠️ Model {model} failed: {e}")
+            last_error = e
+    raise RuntimeError(f"All models failed. Last error: {last_error}")
+
+🔹 3. Cum îl folosești în aplicație
+
+În ai_scorer.py unde ai scorarea:
+
+result, used_model = get_ai_response(prompt)
+print(f"✅ Response generated with {used_model}")
+
+🔹 4. Setările în Replit (pentru control)
+
+Mergi la Secrets (Environment Variables) în Replit.
+
+Adaugă:
+
+OPENAI_API_KEY = cheia ta
+
+OPENAI_MODEL = gpt-3.5-turbo (pentru testare ieftină) sau gpt-4-turbo (pentru demo)
+
+Salvezi.
+
+👉 Dacă uiți să setezi OPENAI_MODEL, scriptul va încerca întâi gpt-4-turbo și apoi cade pe gpt-3.5-turbo automat.
+
+🔹 5. Instructiuni pentru workflow-ul în Replit
+
+Pentru testare (synthetic data, bulk runs):
+
+Intră în Secrets → OPENAI_MODEL = gpt-3.5-turbo
+
+Rulează Test scoring sau Score all opportunities
+
+Cost redus, viteză mare
+
+Pentru demo final (live cu evaluatorii):
+
+Schimbă în Secrets → OPENAI_MODEL = gpt-4-turbo
+
+Rulează doar pe 3–5 rows
+
+Prezinți explicații mai detaliate și experte
+
+✅ Rezultat:
+
+Nu mai “arde” credite scumpe în timpul testelor.
+
+Ai flexibilitate să comuți între modele doar din setări, fără să modifici codul.
+
+Ai fallback automat dacă un model cade sau e indisponibil.
