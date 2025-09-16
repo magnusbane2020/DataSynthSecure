@@ -11,6 +11,8 @@ from ai_scorer import OpportunityScorer
 from report_generator import ExecutiveReportGenerator
 from utils import setup_logging, validate_api_key
 from visualizations import display_interactive_visualizations
+from monitoring_dashboard import monitoring_dashboard
+from audit_trail import log_user_action, log_data_access, log_api_call, log_security_event, log_system_error
 
 # Configure logging with security filters
 setup_logging()
@@ -37,7 +39,7 @@ def main():
     st.sidebar.title("Analysis Steps")
     step = st.sidebar.radio(
         "Select Analysis Phase:",
-        ["Step 1: Generate Synthetic Data", "Step 2: AI Scoring", "Step 3: Interactive Visualizations", "Step 4: Executive Report"]
+        ["Step 1: Generate Synthetic Data", "Step 2: AI Scoring", "Step 3: Interactive Visualizations", "Step 4: Executive Report", "Step 5: Audit Monitor"]
     )
     
     if step == "Step 1: Generate Synthetic Data":
@@ -48,6 +50,8 @@ def main():
         display_interactive_visualizations()
     elif step == "Step 4: Executive Report":
         step3_executive_report()
+    elif step == "Step 5: Audit Monitor":
+        step5_audit_monitoring()
 
 def step1_generate_data():
     st.header("Step 1: Secure Synthetic Data Creation")
@@ -82,6 +86,11 @@ def step1_generate_data():
                     
                     # Store in session state
                     st.session_state['synthetic_data'] = df
+                    
+                    # Log data generation event
+                    log_user_action("DATA_GENERATED", 
+                                   user_id="data_generator",
+                                   details={"dataset_size": len(df), "batch_size": batch_size})
                     
                     st.success(f"✅ Generated {len(df)} synthetic opportunities")
                     
@@ -294,6 +303,23 @@ def full_scoring(df, batch_size=10):
         except Exception as e:
             st.error(f"❌ Scoring error: {str(e)}")
             logger.error(f"Full scoring error: {str(e)}")
+            log_system_error("AI_SCORING_FAILED", {"error": str(e), "dataset_size": len(df)})
+
+def step5_audit_monitoring():
+    """Step 5: Real-time audit trail and security monitoring dashboard"""
+    try:
+        # Log user access to monitoring dashboard
+        log_user_action("AUDIT_DASHBOARD_ACCESSED", user_id="dashboard_user")
+        
+        # Display the monitoring dashboard
+        monitoring_dashboard.display_monitoring_dashboard()
+        
+        log_user_action("AUDIT_DASHBOARD_VIEWED", user_id="dashboard_user")
+        
+    except Exception as e:
+        st.error(f"❌ Error loading audit monitoring dashboard: {str(e)}")
+        logger.error(f"Audit monitoring error: {str(e)}")
+        log_system_error("AUDIT_DASHBOARD_ERROR", {"error": str(e)})
 
 def step3_executive_report():
     st.header("Step 4: Executive Business Recommendations")
