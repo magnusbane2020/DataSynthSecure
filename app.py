@@ -61,7 +61,9 @@ def main():
         if stats['latest_opportunity_date']:
             st.sidebar.text(f"Latest Data: {stats['latest_opportunity_date'].strftime('%Y-%m-%d %H:%M')}")
     except Exception as e:
-        st.sidebar.error("Database unavailable")
+        # Handle connection issues gracefully - don't show error for non-critical sidebar info
+        st.sidebar.info("💾 Database connection refreshing...")
+        logger.warning(f"Database stats temporarily unavailable: {type(e).__name__}")
     
     if step == "Step 1: Generate Synthetic Data":
         step1_generate_data()

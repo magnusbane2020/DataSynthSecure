@@ -288,38 +288,63 @@ class DatabaseManager:
             session.close()
     
     def get_database_stats(self) -> Dict[str, Any]:
-        """Get database statistics"""
-        session = self.get_session()
-        try:
-            # Count opportunities
-            opp_count = session.query(SyntheticOpportunity).count()
-            
-            # Count scores
-            score_count = session.query(OpportunityScore).count()
-            
-            # Get latest batch info
-            latest_opp_batch = session.query(SyntheticOpportunity.batch_id, 
-                                           SyntheticOpportunity.created_at).order_by(
-                                           SyntheticOpportunity.created_at.desc()).first()
-            
-            latest_score_batch = session.query(OpportunityScore.scoring_batch_id, 
-                                             OpportunityScore.created_at).order_by(
-                                             OpportunityScore.created_at.desc()).first()
-            
-            return {
-                'total_opportunities': opp_count,
-                'total_scores': score_count,
-                'latest_opportunity_batch': latest_opp_batch[0] if latest_opp_batch else None,
-                'latest_opportunity_date': latest_opp_batch[1] if latest_opp_batch else None,
-                'latest_scoring_batch': latest_score_batch[0] if latest_score_batch else None,
-                'latest_scoring_date': latest_score_batch[1] if latest_score_batch else None
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting database stats: {str(e)}")
-            raise
-        finally:
-            session.close()
+        """Get database statistics with connection retry"""
+        max_retries = 2
+        last_error = None
+        
+        for attempt in range(max_retries):
+            session = None
+            try:
+                session = self.get_session()
+                
+                # Count opportunities
+                opp_count = session.query(SyntheticOpportunity).count()
+                
+                # Count scores
+                score_count = session.query(OpportunityScore).count()
+                
+                # Get latest batch info
+                latest_opp_batch = session.query(SyntheticOpportunity.batch_id, 
+                                               SyntheticOpportunity.created_at).order_by(
+                                               SyntheticOpportunity.created_at.desc()).first()
+                
+                latest_score_batch = session.query(OpportunityScore.scoring_batch_id, 
+                                                 OpportunityScore.created_at).order_by(
+                                                 OpportunityScore.created_at.desc()).first()
+                
+                return {
+                    'total_opportunities': opp_count,
+                    'total_scores': score_count,
+                    'latest_opportunity_batch': latest_opp_batch[0] if latest_opp_batch else None,
+                    'latest_opportunity_date': latest_opp_batch[1] if latest_opp_batch else None,
+                    'latest_scoring_batch': latest_score_batch[0] if latest_score_batch else None,
+                    'latest_scoring_date': latest_score_batch[1] if latest_score_batch else None
+                }
+                
+            except Exception as e:
+                last_error = e
+                if session:
+                    session.close()
+                    session = None
+                
+                if attempt < max_retries - 1:  # Not last attempt
+                    logger.warning(f"Database stats attempt {attempt + 1} failed, retrying: {type(e).__name__}")
+                    continue
+                else:
+                    logger.error(f"Error getting database stats after {max_retries} attempts: {str(e)}")
+            finally:
+                if session:
+                    session.close()
+        
+        # Return default stats if all attempts failed
+        return {
+            'total_opportunities': 0,
+            'total_scores': 0,
+            'latest_opportunity_batch': None,
+            'latest_opportunity_date': None,
+            'latest_scoring_batch': None,
+            'latest_scoring_date': None
+        }
 
 # Global database manager instance
 db_manager = None
