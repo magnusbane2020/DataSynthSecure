@@ -19,18 +19,18 @@ class OpportunityScorer:
         # do not change this unless explicitly requested by the user
         self.model = "gpt-5"
         
-        # Secure API key handling
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not found")
-        
-        self.client = OpenAI(api_key=api_key)
-        
         # Batch processing configuration
         self.batch_size = 10  # Process 10 opportunities at a time
         self.max_retries = 3
         self.base_delay = 1  # Base delay for exponential backoff
         self.timeout = 30  # Request timeout in seconds
+        
+        # Secure API key handling
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable not found")
+        
+        self.client = OpenAI(api_key=api_key, timeout=self.timeout)
         
         logger.info("OpenAI client initialized securely with batch processing capabilities")
 
@@ -205,7 +205,10 @@ Provide your response in JSON format:
             
             for idx, row in batch_opportunities.iterrows():
                 try:
+                    opp_name = row.get('Opportunity Name', 'Unknown')
+                    logger.info(f"Scoring opportunity: {opp_name}")
                     result = self.score_opportunity(row)
+                    logger.info(f"Successfully scored: {opp_name} (Score: {result.get('Score', 'N/A')})")
                     batch_results.append(result)
                     
                     if progress_callback:

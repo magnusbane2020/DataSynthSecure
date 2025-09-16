@@ -219,7 +219,7 @@ class OpportunityVisualizer:
             
         merged = scores_df.merge(synthetic_df, on='Opportunity_ID', how='left')
         
-        if 'Stage' not in merged.columns:
+        if 'Stage Name' not in merged.columns:
             return None
         
         # Calculate average scores by stage with safe Amount handling
@@ -227,7 +227,7 @@ class OpportunityVisualizer:
         if 'Amount' in merged.columns:
             agg_dict['Amount'] = ['sum']
             
-        stage_scores = merged.groupby('Stage').agg(agg_dict).round(2)
+        stage_scores = merged.groupby('Stage Name').agg(agg_dict).round(2)
         
         if 'Amount' in merged.columns:
             stage_scores.columns = ['Avg_Score', 'Count', 'Total_Value']
@@ -240,14 +240,14 @@ class OpportunityVisualizer:
         
         # Add bar chart for average scores
         fig.add_trace(
-            go.Bar(x=stage_scores['Stage'], y=stage_scores['Avg_Score'], 
+            go.Bar(x=stage_scores['Stage Name'], y=stage_scores['Avg_Score'], 
                    name="Average Score", marker_color=self.color_palette['primary']),
             secondary_y=False,
         )
         
         # Add line chart for opportunity count
         fig.add_trace(
-            go.Scatter(x=stage_scores['Stage'], y=stage_scores['Count'], 
+            go.Scatter(x=stage_scores['Stage Name'], y=stage_scores['Count'], 
                       mode='lines+markers', name="Opportunity Count",
                       line=dict(color=self.color_palette['info'])),
             secondary_y=True,
