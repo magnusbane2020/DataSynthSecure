@@ -1,4 +1,4 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "postgresql-16"]
 [agent]
 integrations = ["python_openai:1.0.0"]
 
@@ -41,6 +41,10 @@ externalPort = 80
 [[ports]]
 localPort = 8501
 externalPort = 3001
+
+[[ports]]
+localPort = 35681
+externalPort = 3002
 
 [[ports]]
 localPort = 36441

@@ -53,6 +53,7 @@ class OpportunityScore(Base):
     __tablename__ = 'opportunity_scores'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
+    opportunity_id = Column(Integer)  # Link to synthetic opportunity
     opportunity_name = Column(String(255))
     account_name = Column(String(255))
     score = Column(Integer)
@@ -154,6 +155,7 @@ class DatabaseManager:
             data = []
             for opp in opportunities:
                 data.append({
+                    'Opportunity_ID': opp.id,  # Include database ID for linking
                     'Opportunity Name': opp.opportunity_name,
                     'Account Name': opp.account_name,
                     'Stage Name': opp.stage_name,
@@ -195,6 +197,7 @@ class DatabaseManager:
             saved_count = 0
             for score_data in scores_data:
                 score = OpportunityScore(
+                    opportunity_id=score_data.get('Opportunity_ID'),  # Store the link ID
                     opportunity_name=score_data.get('Opportunity Name') or '',
                     account_name=score_data.get('Account Name') or '',
                     score=int(score_data.get('Score', 0)) if score_data.get('Score') is not None else 0,
@@ -241,6 +244,7 @@ class DatabaseManager:
             data = []
             for score in scores:
                 data.append({
+                    'Opportunity_ID': score.opportunity_id,  # Include the linking ID
                     'Opportunity Name': score.opportunity_name,
                     'Account Name': score.account_name,
                     'Score': score.score,

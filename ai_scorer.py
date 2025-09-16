@@ -66,6 +66,7 @@ class OpportunityScorer:
             confidence_level = result.get('confidence_level', 'Medium')
             
             return {
+                'Opportunity_ID': opportunity_row.get('Opportunity_ID', None),  # Preserve ID for linking
                 'Opportunity Name': opportunity_row.get('Opportunity Name', 'Unknown'),
                 'Account Name': opportunity_row.get('Account Name', 'Unknown'),  
                 'Score': score,
@@ -81,6 +82,7 @@ class OpportunityScorer:
         except Exception as e:
             logger.error(f"Error scoring opportunity: {str(e)}")
             return {
+                'Opportunity_ID': opportunity_row.get('Opportunity_ID', None),  # Preserve ID for linking
                 'Opportunity Name': opportunity_row.get('Opportunity Name', 'Unknown'),
                 'Account Name': opportunity_row.get('Account Name', 'Unknown'),
                 'Score': 0,
@@ -214,6 +216,7 @@ Provide your response in JSON format:
                     logger.error(f"Failed to score opportunity {row.get('Opportunity Name', 'Unknown')}: {str(e)}")
                     # Add failed result
                     batch_results.append({
+                        'Opportunity_ID': row.get('Opportunity_ID', None),  # Preserve ID for linking
                         'Opportunity Name': row.get('Opportunity Name', 'Unknown'),
                         'Account Name': row.get('Account Name', 'Unknown'),
                         'Score': 0,
