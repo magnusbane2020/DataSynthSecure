@@ -10,8 +10,10 @@ dependencies = [
     "openai>=1.107.3",
     "pandas>=2.3.2",
     "plotly>=5.20,<6",
+    "psycopg2-binary>=2.9.10",
     "scikit-learn>=1.7.2",
     "scipy>=1.11.0",
     "seaborn>=0.13.2",
+    "sqlalchemy>=2.0.43",
     "streamlit>=1.49.1",
 ]
