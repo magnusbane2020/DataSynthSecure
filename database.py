@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 import json
 
 # Configure logging
@@ -93,7 +93,7 @@ class DatabaseManager:
         """Get a database session"""
         return self.Session()
     
-    def save_synthetic_opportunities(self, df: pd.DataFrame, batch_id: str = None) -> int:
+    def save_synthetic_opportunities(self, df: pd.DataFrame, batch_id: Optional[str] = None) -> int:
         """Save synthetic opportunities DataFrame to database"""
         session = self.get_session()
         try:
@@ -106,9 +106,9 @@ class DatabaseManager:
                     opportunity_name=row.get('Opportunity Name') or '',
                     account_name=row.get('Account Name') or '',
                     stage_name=row.get('Stage Name') or '',
-                    amount=float(row.get('Amount', 0)) if row.get('Amount') is not None else 0,
+                    amount=float(row.get('Amount') or 0),
                     close_date=str(row.get('Close Date') or ''),
-                    probability=float(row.get('Probability', 0)) if row.get('Probability') is not None else 0,
+                    probability=float(row.get('Probability') or 0),
                     owner_name=row.get('Owner Name') or '',
                     lead_source=row.get('Lead Source') or '',
                     opportunity_type=row.get('Type') or '',
@@ -136,7 +136,7 @@ class DatabaseManager:
         finally:
             session.close()
     
-    def load_synthetic_opportunities(self, batch_id: str = None, limit: int = None) -> pd.DataFrame:
+    def load_synthetic_opportunities(self, batch_id: Optional[str] = None, limit: Optional[int] = None) -> pd.DataFrame:
         """Load synthetic opportunities from database"""
         session = self.get_session()
         try:
@@ -185,7 +185,7 @@ class DatabaseManager:
         finally:
             session.close()
     
-    def save_opportunity_scores(self, scores_data: List[Dict], scoring_batch_id: str = None) -> int:
+    def save_opportunity_scores(self, scores_data: List[Dict], scoring_batch_id: Optional[str] = None) -> int:
         """Save opportunity scores to database"""
         session = self.get_session()
         try:
@@ -220,7 +220,7 @@ class DatabaseManager:
         finally:
             session.close()
     
-    def load_opportunity_scores(self, scoring_batch_id: str = None, limit: int = None) -> pd.DataFrame:
+    def load_opportunity_scores(self, scoring_batch_id: Optional[str] = None, limit: Optional[int] = None) -> pd.DataFrame:
         """Load opportunity scores from database"""
         session = self.get_session()
         try:

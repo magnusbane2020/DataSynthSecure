@@ -440,8 +440,13 @@ def step6_bias_detection():
         if not isinstance(synthetic_data, pd.DataFrame):
             synthetic_data = pd.DataFrame(synthetic_data)
         
-        # Display bias monitoring dashboard
-        bias_dashboard.display_bias_monitoring_dashboard(scored_data, synthetic_data)
+        # Check if scored_data is valid before displaying dashboard
+        if scored_data is not None and not scored_data.empty:
+            # Display bias monitoring dashboard
+            bias_dashboard.display_bias_monitoring_dashboard(scored_data, synthetic_data)
+        else:
+            st.error("❌ No valid scoring data available for bias analysis.")
+            st.info("Please complete Step 2: AI Scoring first to generate valid results.")
         
         log_user_action("BIAS_DETECTION_VIEWED", user_id="bias_analyst")
         
