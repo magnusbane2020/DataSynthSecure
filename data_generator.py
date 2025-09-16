@@ -191,11 +191,11 @@ class SyntheticDataGenerator:
         from typing import Optional
         fields: dict[str, Optional[str]] = {
             'Metrics': None,
-            'Economic_Buyer': None,
-            'Decision_Criteria': None,
-            'Decision_Process': None,
-            'Paper_Process': None,
-            'Identify_Pain': None,
+            'Economic Buyer': None,
+            'Decision Criteria': None,
+            'Decision Process': None,
+            'Paper Process': None,
+            'Identify Pain': None,
             'Champion': None,
             'Competition': None
         }
