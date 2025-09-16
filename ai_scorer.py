@@ -7,6 +7,7 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor
 import random
+from database import get_db_manager
 
 logger = logging.getLogger(__name__)
 
@@ -57,39 +58,56 @@ class OpportunityScorer:
             score = max(0, min(100, int(result.get('score', 0))))
             explanation = result.get('explanation', 'No explanation provided')
             
+            # Parse additional scoring details if available  
+            meddpicc_score = result.get('meddpicc_score', score)
+            bant_score = result.get('bant_score', score) 
+            key_strengths = result.get('key_strengths', 'Not specified')
+            areas_for_improvement = result.get('areas_for_improvement', 'Not specified')
+            confidence_level = result.get('confidence_level', 'Medium')
+            
             return {
-                'Opportunity_ID': opportunity_row.get('Opportunity_ID', 'Unknown'),
-                'Opportunity_Name': opportunity_row.get('Opportunity_Name', 'Unknown'),
+                'Opportunity Name': opportunity_row.get('Opportunity Name', 'Unknown'),
+                'Account Name': opportunity_row.get('Account Name', 'Unknown'),  
                 'Score': score,
-                'Explanation': explanation,
+                'Reasoning': explanation,
+                'MEDDPICC Score': meddpicc_score,
+                'BANT Score': bant_score,
+                'Key Strengths': key_strengths,
+                'Areas for Improvement': areas_for_improvement,
+                'Confidence Level': confidence_level,
                 'Scoring_Timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
             }
             
         except Exception as e:
             logger.error(f"Error scoring opportunity: {str(e)}")
             return {
-                'Opportunity_ID': opportunity_row.get('Opportunity_ID', 'Unknown'),
-                'Opportunity_Name': opportunity_row.get('Opportunity_Name', 'Unknown'),
+                'Opportunity Name': opportunity_row.get('Opportunity Name', 'Unknown'),
+                'Account Name': opportunity_row.get('Account Name', 'Unknown'),
                 'Score': 0,
-                'Explanation': f"Scoring error: {str(e)}",
+                'Reasoning': f"Scoring error: {str(e)}",
+                'MEDDPICC Score': 0,
+                'BANT Score': 0,
+                'Key Strengths': 'Not available due to error',
+                'Areas for Improvement': 'Not available due to error', 
+                'Confidence Level': 'Low',
                 'Scoring_Timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
             }
 
     def _prepare_opportunity_data(self, row):
         """Prepare opportunity data for scoring, removing any sensitive info"""
         return {
-            'opportunity_name': row.get('Opportunity_Name', ''),
-            'account': row.get('Account', ''),
+            'opportunity_name': row.get('Opportunity Name', ''),
+            'account': row.get('Account Name', ''),
             'amount': row.get('Amount', 0),
-            'stage': row.get('Stage', ''),
+            'stage': row.get('Stage Name', ''),
             'product': row.get('Product', ''),
-            'notes': row.get('Opportunity_Notes', ''),
+            'notes': row.get('Opportunity Notes', ''),
             'metrics': row.get('Metrics', ''),
-            'economic_buyer': row.get('Economic_Buyer', ''),
-            'decision_criteria': row.get('Decision_Criteria', ''),
-            'decision_process': row.get('Decision_Process', ''),
-            'paper_process': row.get('Paper_Process', ''),
-            'identify_pain': row.get('Identify_Pain', ''),
+            'economic_buyer': row.get('Economic Buyer', ''),
+            'decision_criteria': row.get('Decision Criteria', ''),
+            'decision_process': row.get('Decision Process', ''),
+            'paper_process': row.get('Paper Process', ''),
+            'identify_pain': row.get('Identify Pain', ''),
             'champion': row.get('Champion', ''),
             'competition': row.get('Competition', '')
         }
@@ -193,13 +211,18 @@ Provide your response in JSON format:
                         
                 except Exception as e:
                     failed_count += 1
-                    logger.error(f"Failed to score opportunity {row.get('Opportunity_Name', 'Unknown')}: {str(e)}")
+                    logger.error(f"Failed to score opportunity {row.get('Opportunity Name', 'Unknown')}: {str(e)}")
                     # Add failed result
                     batch_results.append({
-                        'Opportunity_ID': row.get('Opportunity_ID', 'Unknown'),
-                        'Opportunity_Name': row.get('Opportunity_Name', 'Unknown'),
+                        'Opportunity Name': row.get('Opportunity Name', 'Unknown'),
+                        'Account Name': row.get('Account Name', 'Unknown'),
                         'Score': 0,
-                        'Explanation': f"Scoring failed: {str(e)}",
+                        'Reasoning': f"Scoring failed: {str(e)}",
+                        'MEDDPICC Score': 0,
+                        'BANT Score': 0,
+                        'Key Strengths': 'Not available due to error',
+                        'Areas for Improvement': 'Not available due to error',
+                        'Confidence Level': 'Low',
                         'Scoring_Timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
                     })
                     
@@ -213,10 +236,20 @@ Provide your response in JSON format:
                 time.sleep(0.5)
         
         # Count actual failures by checking results (since score_opportunity swallows errors)
-        actual_failures = sum(1 for result in results if result['Score'] == 0 and 'error' in result['Explanation'].lower())
+        actual_failures = sum(1 for result in results if result['Score'] == 0 and 'error' in result['Reasoning'].lower())
         success_count = total_opportunities - actual_failures
         success_rate = (success_count / total_opportunities) * 100
         
         logger.info(f"Batch scoring completed. Success rate: {success_rate:.1f}% ({success_count}/{total_opportunities})")
+        
+        # Save results to database
+        try:
+            db_manager = get_db_manager()
+            scoring_batch_id = f"scoring_{time.strftime('%Y%m%d_%H%M%S')}"
+            saved_count = db_manager.save_opportunity_scores(results, scoring_batch_id)
+            logger.info(f"Saved {saved_count} opportunity scores to database with batch_id: {scoring_batch_id}")
+        except Exception as e:
+            logger.error(f"Failed to save opportunity scores to database: {str(e)}")
+            # Continue without failing - still return results for backward compatibility
         
         return results, actual_failures

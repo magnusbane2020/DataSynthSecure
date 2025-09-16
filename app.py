@@ -14,6 +14,7 @@ from visualizations import display_interactive_visualizations
 from monitoring_dashboard import monitoring_dashboard
 from audit_trail import log_user_action, log_data_access, log_api_call, log_security_event, log_system_error
 from bias_dashboard import bias_dashboard
+from database import get_db_manager, init_database
 
 # Configure logging with security filters
 setup_logging()
@@ -30,10 +31,16 @@ def main():
     st.title("🛡️ CrowdStrike Secure Synthetic Data Analysis")
     st.markdown("**Secure Synthetic Salesforce Opportunity Data Generator with AI-Powered Scoring**")
     
+    # Initialize database
+    if not init_database():
+        st.error("❌ Database connection failed. Please check your configuration.")
+        return
+    
     # Security disclaimer
     st.info("""
     🔒 **Security Notice**: This application uses synthetic data only. No real customer data (PII) is processed.
     All API keys are handled through environment variables with secure practices.
+    Data is stored securely in PostgreSQL database.
     """)
     
     # Sidebar for navigation
@@ -42,6 +49,19 @@ def main():
         "Select Analysis Phase:",
         ["Step 1: Generate Synthetic Data", "Step 2: AI Scoring", "Step 3: Interactive Visualizations", "Step 4: Executive Report", "Step 5: Audit Monitor", "Step 6: Bias Detection"]
     )
+    
+    # Database statistics sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📊 Database Status")
+    try:
+        db_manager = get_db_manager()
+        stats = db_manager.get_database_stats()
+        st.sidebar.metric("Total Opportunities", stats['total_opportunities'])
+        st.sidebar.metric("Total Scores", stats['total_scores'])
+        if stats['latest_opportunity_date']:
+            st.sidebar.text(f"Latest Data: {stats['latest_opportunity_date'].strftime('%Y-%m-%d %H:%M')}")
+    except Exception as e:
+        st.sidebar.error("Database unavailable")
     
     if step == "Step 1: Generate Synthetic Data":
         step1_generate_data()
@@ -96,6 +116,7 @@ def step1_generate_data():
                                    details={"dataset_size": len(df), "batch_size": batch_size})
                     
                     st.success(f"✅ Generated {len(df)} synthetic opportunities")
+                    st.success(f"💾 Data saved to PostgreSQL database")
                     
                     # Display first 5 rows for validation
                     st.subheader("Validation Preview (First 5 Rows)")
@@ -132,6 +153,35 @@ def step1_generate_data():
         - Zero PII inclusion
         """)
     
+    # Load existing data from database
+    st.markdown("---")
+    st.subheader("Load Existing Data")
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        if st.button("📂 Load Latest Data from Database"):
+            try:
+                db_manager = get_db_manager()
+                df = db_manager.load_synthetic_opportunities()
+                if not df.empty:
+                    st.session_state['synthetic_data'] = df
+                    st.success(f"✅ Loaded {len(df)} opportunities from database")
+                else:
+                    st.warning("No data found in database. Generate some data first!")
+            except Exception as e:
+                st.error(f"❌ Error loading data: {str(e)}")
+                logger.error(f"Data loading error: {str(e)}")
+    
+    with col2:
+        # Show available batches
+        try:
+            db_manager = get_db_manager()
+            batches = db_manager.get_available_batches()
+            if batches['opportunity_batches']:
+                st.selectbox("Available Data Batches:", batches['opportunity_batches'], key="data_batch_selector")
+        except:
+            pass
+    
     # Display existing data if available
     if 'synthetic_data' in st.session_state:
         st.subheader("Current Dataset Overview")
@@ -151,10 +201,21 @@ def step2_ai_scoring():
     st.header("Step 2: Secure AI Assessment & Scoring")
     st.markdown("Evaluate opportunities using OpenAI with secure API key handling")
     
-    # Check for synthetic data
+    # Check for synthetic data (try loading from database if not in session)
     if 'synthetic_data' not in st.session_state:
-        st.warning("⚠️ Please generate synthetic data in Step 1 first.")
-        return
+        try:
+            db_manager = get_db_manager()
+            df = db_manager.load_synthetic_opportunities()
+            if not df.empty:
+                st.session_state['synthetic_data'] = df
+                st.info(f"✅ Automatically loaded {len(df)} opportunities from database")
+            else:
+                st.warning("⚠️ Please generate synthetic data in Step 1 first.")
+                return
+        except Exception as e:
+            st.warning("⚠️ Please generate synthetic data in Step 1 first.")
+            logger.error(f"Failed to auto-load data: {str(e)}")
+            return
     
     # API key validation
     api_key_status = validate_api_key()
@@ -307,6 +368,36 @@ def full_scoring(df, batch_size=10):
             st.error(f"❌ Scoring error: {str(e)}")
             logger.error(f"Full scoring error: {str(e)}")
             log_system_error("AI_SCORING_FAILED", {"error": str(e), "dataset_size": len(df)})
+    
+    # Load existing scores section
+    st.markdown("---")
+    st.subheader("Load Existing Scores")
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        if st.button("📊 Load Latest Scores from Database"):
+            try:
+                db_manager = get_db_manager()
+                scores_df = db_manager.load_opportunity_scores()
+                if not scores_df.empty:
+                    st.session_state['all_scores'] = scores_df
+                    st.success(f"✅ Loaded {len(scores_df)} scores from database")
+                    st.dataframe(scores_df.head(), use_container_width=True)
+                else:
+                    st.warning("No scores found in database. Run AI scoring first!")
+            except Exception as e:
+                st.error(f"❌ Error loading scores: {str(e)}")
+                logger.error(f"Score loading error: {str(e)}")
+    
+    with col2:
+        # Show available scoring batches
+        try:
+            db_manager = get_db_manager()
+            batches = db_manager.get_available_batches()
+            if batches['scoring_batches']:
+                st.selectbox("Available Scoring Batches:", batches['scoring_batches'], key="scoring_batch_selector")
+        except:
+            pass
 
 def step5_audit_monitoring():
     """Step 5: Real-time audit trail and security monitoring dashboard"""

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import random
 import uuid
 import logging
+from database import get_db_manager
 
 logger = logging.getLogger(__name__)
 
@@ -103,16 +104,17 @@ class SyntheticDataGenerator:
                 notes = self._generate_opportunity_notes(company, product)
                 
                 opportunity = {
-                    'Opportunity_ID': str(uuid.uuid4())[:8],
-                    'Opportunity_Name': opp_name,
-                    'Account': company,
+                    'Opportunity Name': opp_name,
+                    'Account Name': company,
                     'Amount': amount,
-                    'Close_Date': close_date.strftime('%Y-%m-%d'),
-                    'Stage': random.choice(self.stages),
-                    'Owner': random.choice(self.sales_owners),
-                    'Created_Date': created_date.strftime('%Y-%m-%d'),
+                    'Close Date': close_date.strftime('%Y-%m-%d'),
+                    'Stage Name': random.choice(self.stages),
+                    'Owner Name': random.choice(self.sales_owners),
+                    'Lead Source': random.choice(['Website', 'Referral', 'Cold Call', 'Trade Show', 'Partner']),
+                    'Type': 'New Business',
+                    'Probability': random.randint(10, 90),
                     'Product': product,
-                    'Opportunity_Notes': notes
+                    'Opportunity Notes': notes
                 }
                 
                 # Add MEDDPICC fields for ~50% of opportunities
@@ -126,6 +128,17 @@ class SyntheticDataGenerator:
         
         df = pd.DataFrame(opportunities)
         logger.info(f"Successfully generated {len(df)} synthetic opportunities")
+        
+        # Save to database
+        try:
+            db_manager = get_db_manager()
+            batch_id = f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            saved_count = db_manager.save_synthetic_opportunities(df, batch_id)
+            logger.info(f"Saved {saved_count} opportunities to database with batch_id: {batch_id}")
+        except Exception as e:
+            logger.error(f"Failed to save opportunities to database: {str(e)}")
+            # Continue without failing - still return DataFrame for backward compatibility
+        
         return df
 
     def _generate_opportunity_notes(self, company, product):
@@ -164,11 +177,11 @@ class SyntheticDataGenerator:
         """Generate complete MEDDPICC fields"""
         return {
             'Metrics': f"Reduce security incidents by {random.randint(30, 70)}%, improve MTTR by {random.randint(40, 80)}%",
-            'Economic_Buyer': f"{random.choice(['CISO', 'CTO', 'CEO', 'CFO'])} - {self.fake.name()}",
-            'Decision_Criteria': ', '.join(random.sample(self.decision_criteria, 3)),
-            'Decision_Process': f"{random.randint(60, 120)} day evaluation, {random.randint(3, 7)} stakeholders",
-            'Paper_Process': f"{random.choice(['Legal review', 'Procurement approval', 'Security assessment'])} required",
-            'Identify_Pain': f"Current solution has {random.choice(['high false positives', 'slow response times', 'limited visibility', 'complex management'])}",
+            'Economic Buyer': f"{random.choice(['CISO', 'CTO', 'CEO', 'CFO'])} - {self.fake.name()}",
+            'Decision Criteria': ', '.join(random.sample(self.decision_criteria, 3)),
+            'Decision Process': f"{random.randint(60, 120)} day evaluation, {random.randint(3, 7)} stakeholders",
+            'Paper Process': f"{random.choice(['Legal review', 'Procurement approval', 'Security assessment'])} required",
+            'Identify Pain': f"Current solution has {random.choice(['high false positives', 'slow response times', 'limited visibility', 'complex management'])}",
             'Champion': f"{self.fake.name()} - {random.choice(['Security Analyst', 'IT Director', 'SOC Manager'])}",
             'Competition': ', '.join(random.sample(self.competitors, 2))
         }

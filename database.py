@@ -103,15 +103,15 @@ class DatabaseManager:
             saved_count = 0
             for _, row in df.iterrows():
                 opportunity = SyntheticOpportunity(
-                    opportunity_name=row.get('Opportunity Name'),
-                    account_name=row.get('Account Name'),
-                    stage_name=row.get('Stage Name'),
-                    amount=float(row.get('Amount', 0)) if row.get('Amount') else None,
-                    close_date=str(row.get('Close Date', '')),
-                    probability=float(row.get('Probability', 0)) if row.get('Probability') else None,
-                    owner_name=row.get('Owner Name'),
-                    lead_source=row.get('Lead Source'),
-                    opportunity_type=row.get('Type'),
+                    opportunity_name=row.get('Opportunity Name') or '',
+                    account_name=row.get('Account Name') or '',
+                    stage_name=row.get('Stage Name') or '',
+                    amount=float(row.get('Amount', 0)) if row.get('Amount') is not None else 0,
+                    close_date=str(row.get('Close Date') or ''),
+                    probability=float(row.get('Probability', 0)) if row.get('Probability') is not None else 0,
+                    owner_name=row.get('Owner Name') or '',
+                    lead_source=row.get('Lead Source') or '',
+                    opportunity_type=row.get('Type') or '',
                     metrics=row.get('Metrics'),
                     economic_buyer=row.get('Economic Buyer'),
                     decision_criteria=row.get('Decision Criteria'),
@@ -195,12 +195,12 @@ class DatabaseManager:
             saved_count = 0
             for score_data in scores_data:
                 score = OpportunityScore(
-                    opportunity_name=score_data.get('Opportunity Name'),
-                    account_name=score_data.get('Account Name'),
-                    score=score_data.get('Score'),
+                    opportunity_name=score_data.get('Opportunity Name') or '',
+                    account_name=score_data.get('Account Name') or '',
+                    score=int(score_data.get('Score', 0)) if score_data.get('Score') is not None else 0,
                     reasoning=score_data.get('Reasoning'),
-                    meddpicc_score=score_data.get('MEDDPICC Score'),
-                    bant_score=score_data.get('BANT Score'),
+                    meddpicc_score=int(score_data.get('MEDDPICC Score', 0)) if score_data.get('MEDDPICC Score') is not None else 0,
+                    bant_score=int(score_data.get('BANT Score', 0)) if score_data.get('BANT Score') is not None else 0,
                     key_strengths=score_data.get('Key Strengths'),
                     areas_for_improvement=score_data.get('Areas for Improvement'),
                     confidence_level=score_data.get('Confidence Level'),
