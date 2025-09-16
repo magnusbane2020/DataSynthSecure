@@ -10,6 +10,7 @@ from data_generator import SyntheticDataGenerator
 from ai_scorer import OpportunityScorer
 from report_generator import ExecutiveReportGenerator
 from utils import setup_logging, validate_api_key
+from visualizations import display_interactive_visualizations
 
 # Configure logging with security filters
 setup_logging()
@@ -36,14 +37,16 @@ def main():
     st.sidebar.title("Analysis Steps")
     step = st.sidebar.radio(
         "Select Analysis Phase:",
-        ["Step 1: Generate Synthetic Data", "Step 2: AI Scoring", "Step 3: Executive Report"]
+        ["Step 1: Generate Synthetic Data", "Step 2: AI Scoring", "Step 3: Interactive Visualizations", "Step 4: Executive Report"]
     )
     
     if step == "Step 1: Generate Synthetic Data":
         step1_generate_data()
     elif step == "Step 2: AI Scoring":
         step2_ai_scoring()
-    elif step == "Step 3: Executive Report":
+    elif step == "Step 3: Interactive Visualizations":
+        display_interactive_visualizations()
+    elif step == "Step 4: Executive Report":
         step3_executive_report()
 
 def step1_generate_data():
@@ -293,7 +296,7 @@ def full_scoring(df, batch_size=10):
             logger.error(f"Full scoring error: {str(e)}")
 
 def step3_executive_report():
-    st.header("Step 3: Executive Business Recommendations")
+    st.header("Step 4: Executive Business Recommendations")
     st.markdown("Cybersecurity-conscious analysis and strategic recommendations")
     
     # Check for scoring results
