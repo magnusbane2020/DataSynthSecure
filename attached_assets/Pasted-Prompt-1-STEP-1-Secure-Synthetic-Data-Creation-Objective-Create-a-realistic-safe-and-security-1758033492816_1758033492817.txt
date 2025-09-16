@@ -1,0 +1,106 @@
+Prompt 1 — STEP 1: Secure Synthetic Data Creation
+
+Objective: Create a realistic, safe, and security-conscious dataset of Salesforce opportunities.
+
+You are tasked with creating synthetic Salesforce opportunity data for a professional evaluation at CrowdStrike (cybersecurity context).
+
+🔹 Requirements:
+
+Generate 50 fake opportunities in Stage 1 (before qualification).
+
+Use publicly traded company names (never real customer data).
+
+Include standard SFDC fields: Opportunity Name, Account, Close Date, Stage, Amount, Owner, Created Date.
+
+Add opportunity notes: Why? Why now? Why this product?
+
+For ~50% of opportunities, populate MEDDPICC fields (Metrics, Economic Buyer, Decision Criteria, Decision Process, Paper Process, Identify Pain, Champion, Competition). Leave the others partially empty to reflect reality.
+
+Ensure no personal data (PII) is included. All values must be synthetic.
+
+🔹 Security & Validation:
+
+Treat all outputs as synthetic & anonymized.
+
+Store results only in local CSV (synthetic_opportunities.csv) — no external uploads.
+
+Print the first 5 rows for validation before saving the full dataset.
+
+🔹 Output:
+A pandas-style DataFrame → export to CSV. File should be clean, consistent, and reproducible.
+
+Prompt 2 — STEP 2: Secure AI Assessment & Scoring
+
+Objective: Evaluate each opportunity with AI scoring while ensuring secure handling of API keys and data.
+
+From the dataset generated in Step 1, assess each opportunity using GenAI with secure Python integration.
+
+🔹 Requirements:
+
+Write a Python script that calls an AI API (OpenAI / Claude / Snowflake Cortex trial).
+
+API keys must be stored in environment variables (.env file or system environment) — never hardcoded.
+
+For each opportunity, generate:
+
+A score (0–100) for deal quality.
+
+A concise explanation of the score.
+
+Use frameworks like MEDDPICC, BANT, or hybrid scoring.
+
+Time the script’s execution from 0 → 50 rows.
+
+Save results to opportunity_scores.csv with [Opportunity ID, Score, Explanation].
+
+🔹 Security & Validation:
+
+No API keys printed in logs.
+
+No sensitive data stored or transmitted.
+
+Run a test with 3 rows before scaling to all 50.
+
+Confirm CSV format is clean before final run.
+
+🔹 Output:
+A structured CSV of opportunity scores + runtime measurement.
+
+Prompt 3 — STEP 3: Business Recommendation with Security Lens
+
+Objective: Provide an executive-level report with cybersecurity-conscious recommendations.
+
+Using the scoring results (opportunity_scores.csv), create a business recommendation report tailored to CrowdStrike leadership.
+
+🔹 Requirements:
+
+Summarize scoring distribution and highlight key patterns (e.g., MEDDPICC-complete opportunities score higher).
+
+Provide strategic recommendations for using AI scoring at scale:
+
+Improvements (data quality checks, automation, enrichment).
+
+Guardrails & Security Concerns:
+
+Bias mitigation in scoring
+
+Explainability for decision-making
+
+GDPR/data residency compliance
+
+Secure API usage (rotation of API keys, encrypted storage, principle of least privilege)
+
+Lessons Learned from synthetic pilot.
+
+Suggest next steps: integration into CRM workflows, dashboards, or pipeline prioritization.
+
+🔹 Security Emphasis:
+
+Stress that no customer data was used (synthetic only).
+
+Highlight compliance awareness (GDPR, SOC2, HIPAA where relevant).
+
+Note monitoring and audit trails as future enhancements.
+
+🔹 Output:
+A concise, professional, leadership-ready report — written in business language with cybersecurity credibility.
