@@ -16,6 +16,9 @@ class OpportunityScorer:
     """Secure AI-powered opportunity scorer using OpenAI"""
     
     def __init__(self):
+        # 🛡️ DEVELOPMENT COST PROTECTION: Mock AI calls to prevent credit bleeding
+        self.use_mock_ai = os.environ.get("USE_MOCK_AI", "false").lower() == "true"
+        
         # Cost-effective model selection with automatic fallback
         # Environment variable OPENAI_MODEL controls choice (defaults to cheapest: gpt-3.5-turbo)
         self.preferred_model = os.environ.get("OPENAI_MODEL", "gpt-3.5-turbo")
@@ -40,16 +43,23 @@ class OpportunityScorer:
         self.base_delay = 0.5  # Faster retry delay
         self.timeout = 90  # Increased timeout for batch processing (OpenAI can take 30-60s)
         
-        # Secure API key handling
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not found")
-        
-        self.client = OpenAI(api_key=api_key, timeout=self.timeout)
-        
-        logger.info(f"💰 OpenAI client initialized with cost-effective model chain: {self.model_fallbacks}")
-        logger.info(f"🎯 Preferred model: {self.preferred_model} (set OPENAI_MODEL env var to control)")
-        logger.info(f"💡 Model capabilities: JSON mode={self._supports_json_mode(self.preferred_model)}, Cost tier={self._get_cost_tier(self.preferred_model)}")
+        # Conditional API key handling based on mock mode
+        if self.use_mock_ai:
+            # 🛡️ MOCK MODE: No API key or client needed for zero-cost development
+            self.client = None
+            logger.warning("🛡️ MOCK MODE ACTIVE: AI calls will return fake responses to save credits!")
+            logger.warning("💸 No OpenAI API key required in mock mode")
+            logger.warning("💡 Set USE_MOCK_AI=false in Secrets to enable real AI scoring")
+        else:
+            # Real AI mode: Secure API key handling required
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY environment variable not found (required when USE_MOCK_AI=false)")
+            
+            self.client = OpenAI(api_key=api_key, timeout=self.timeout)
+            logger.info(f"💰 OpenAI client initialized with cost-effective model chain: {self.model_fallbacks}")
+            logger.info(f"🎯 Preferred model: {self.preferred_model} (set OPENAI_MODEL env var to control)")
+            logger.info(f"💡 Model capabilities: JSON mode={self._supports_json_mode(self.preferred_model)}, Cost tier={self._get_cost_tier(self.preferred_model)}")
 
     def _build_fallback_chain(self, preferred_model: str, all_models: list) -> list:
         """Build fallback chain with preferred model first, then by cost efficiency"""
@@ -74,6 +84,50 @@ class OpportunityScorer:
     def _get_cost_tier(self, model_name: str) -> str:
         """Get cost tier for a model"""
         return self.model_capabilities.get(model_name, {}).get('cost_tier', 'unknown')
+    
+    def _generate_mock_response(self, is_batch: bool = False):
+        """🛡️ Generate mock AI response to prevent credit bleeding during development"""
+        
+        # Realistic mock responses for different scenarios
+        mock_explanations = [
+            "MEDDPICC Analysis shows strong Economic Buyer identification and clear metrics. Key strengths: Well-defined ROI and timeline. Areas for improvement: Need better champion engagement.",
+            "Solid opportunity with clear pain points identified. BANT qualification shows budget authority and need alignment. Recommend focusing on decision process clarity.",
+            "High-potential deal with strong business case. MEDDPICC completeness: 75%. Economic buyer engaged, metrics defined. Ready for technical validation phase.",
+            "Moderate scoring due to incomplete MEDDPICC elements. Strong on metrics and pain identification, weak on champion engagement. Suggest deeper discovery calls.",
+            "Excellent opportunity with full MEDDPICC framework completion. Clear business value, engaged stakeholders, defined processes. Ready for proposal stage."
+        ]
+        
+        if is_batch:
+            # Mock response for batch scoring (multiple opportunities)
+            batch_size = random.randint(2, 5)  # Simulate variable batch sizes
+            mock_content = "["
+            for i in range(batch_size):
+                if i > 0:
+                    mock_content += ", "
+                score = random.randint(45, 95)
+                explanation = random.choice(mock_explanations)
+                mock_content += f'{{"id": {i+1}, "score": {score}, "explanation": "{explanation}"}}'
+            mock_content += "]"
+        else:
+            # Mock response for single scoring
+            score = random.randint(45, 95)
+            explanation = random.choice(mock_explanations)
+            mock_content = f'{{"score": {score}, "explanation": "{explanation}"}}'
+        
+        # Create mock response object that mimics OpenAI's response structure
+        class MockChoice:
+            def __init__(self, content):
+                class MockMessage:
+                    def __init__(self, content):
+                        self.content = content
+                self.message = MockMessage(content)
+        
+        class MockResponse:
+            def __init__(self, content):
+                self.choices = [MockChoice(content)]
+        
+        logger.info(f"🛡️ Generated mock {'batch' if is_batch else 'single'} response (no API credits used)")
+        return MockResponse(mock_content)
 
     def score_opportunity(self, opportunity_row):
         """Score a single opportunity using AI with MEDDPICC/BANT framework"""
@@ -443,6 +497,12 @@ Provide your response in JSON format:
 
     def _make_api_call_with_retry(self, prompt: str, is_batch: bool = False):
         """Make OpenAI API call with model fallback and retry logic to save costs"""
+        
+        # 🛡️ MOCK MODE: Return fake responses to prevent credit bleeding during development
+        if self.use_mock_ai:
+            logger.info("🛡️ MOCK AI: Returning fake response to save credits")
+            return self._generate_mock_response(is_batch)
+        
         last_error = None
         
         # Try each model in the fallback chain
