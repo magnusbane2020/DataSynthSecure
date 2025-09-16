@@ -16,9 +16,22 @@ class OpportunityScorer:
     """Secure AI-powered opportunity scorer using OpenAI"""
     
     def __init__(self):
-        # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
-        # do not change this unless explicitly requested by the user
-        self.model = "gpt-5"
+        # Cost-effective model selection with automatic fallback
+        # Environment variable OPENAI_MODEL controls choice (defaults to cheapest: gpt-3.5-turbo)
+        self.preferred_model = os.environ.get("OPENAI_MODEL", "gpt-3.5-turbo")
+        
+        # Model capabilities mapping for conditional features
+        self.model_capabilities = {
+            "gpt-4-turbo": {"supports_json_mode": True, "cost_tier": "high"},
+            "gpt-4o": {"supports_json_mode": True, "cost_tier": "high"},
+            "gpt-4o-mini": {"supports_json_mode": True, "cost_tier": "low"},
+            "gpt-3.5-turbo": {"supports_json_mode": False, "cost_tier": "low"}
+        }
+        
+        # Dynamically build fallback chain with preferred model first
+        all_models = ["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4-turbo", "gpt-4o"]
+        self.model_fallbacks = self._build_fallback_chain(self.preferred_model, all_models)
+        self.current_model = self.preferred_model
         
         # Batch processing configuration - optimized for speed
         self.batch_size = 5  # Process 5 opportunities per API call (true batching)
@@ -34,7 +47,33 @@ class OpportunityScorer:
         
         self.client = OpenAI(api_key=api_key, timeout=self.timeout)
         
-        logger.info("OpenAI client initialized securely with batch processing capabilities")
+        logger.info(f"💰 OpenAI client initialized with cost-effective model chain: {self.model_fallbacks}")
+        logger.info(f"🎯 Preferred model: {self.preferred_model} (set OPENAI_MODEL env var to control)")
+        logger.info(f"💡 Model capabilities: JSON mode={self._supports_json_mode(self.preferred_model)}, Cost tier={self._get_cost_tier(self.preferred_model)}")
+
+    def _build_fallback_chain(self, preferred_model: str, all_models: list) -> list:
+        """Build fallback chain with preferred model first, then by cost efficiency"""
+        if preferred_model not in all_models:
+            logger.warning(f"⚠️ Preferred model '{preferred_model}' not in supported models, using default chain")
+            return all_models
+        
+        # Remove preferred model from list and put it first
+        fallback_chain = [preferred_model]
+        remaining_models = [m for m in all_models if m != preferred_model]
+        
+        # Sort remaining by cost (low cost first for better fallback)
+        remaining_models.sort(key=lambda m: self.model_capabilities.get(m, {}).get('cost_tier', 'high') == 'low', reverse=True)
+        fallback_chain.extend(remaining_models)
+        
+        return fallback_chain
+    
+    def _supports_json_mode(self, model_name: str) -> bool:
+        """Check if a model supports structured JSON response format"""
+        return self.model_capabilities.get(model_name, {}).get('supports_json_mode', False)
+    
+    def _get_cost_tier(self, model_name: str) -> str:
+        """Get cost tier for a model"""
+        return self.model_capabilities.get(model_name, {}).get('cost_tier', 'unknown')
 
     def score_opportunity(self, opportunity_row):
         """Score a single opportunity using AI with MEDDPICC/BANT framework"""
@@ -403,42 +442,77 @@ Provide your response in JSON format:
 """
 
     def _make_api_call_with_retry(self, prompt: str, is_batch: bool = False):
-        """Make OpenAI API call with retry logic and exponential backoff"""
-        for attempt in range(self.max_retries):
-            try:
-                # Different response format for batch vs single scoring
-                call_params = {
-                    "model": self.model,
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are a cybersecurity sales expert specializing in opportunity qualification using MEDDPICC and BANT frameworks. Analyze opportunities and provide scores with detailed explanations."
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ]
-                    # Note: GPT-5 only supports default temperature of 1.0
-                    # Timeout is handled by the client internally
-                }
-                
-                # Only add json_object format for single scoring, not for batch arrays
-                if not is_batch:
-                    call_params["response_format"] = {"type": "json_object"}
-                
-                response = self.client.chat.completions.create(**call_params)
-                return response
-                
-            except Exception as e:
-                if attempt < self.max_retries - 1:
-                    # Exponential backoff with jitter
-                    delay = self.base_delay * (2 ** attempt) + random.uniform(0, 1)
-                    logger.warning(f"API call attempt {attempt + 1} failed: {str(e)}. Retrying in {delay:.2f}s...")
-                    time.sleep(delay)
-                else:
-                    logger.error(f"All {self.max_retries} API call attempts failed: {str(e)}")
-                    raise
+        """Make OpenAI API call with model fallback and retry logic to save costs"""
+        last_error = None
+        
+        # Try each model in the fallback chain
+        for model_name in self.model_fallbacks:
+            cost_tier = self._get_cost_tier(model_name)
+            supports_json = self._supports_json_mode(model_name)
+            logger.info(f"💰 Trying {cost_tier}-cost model: {model_name} (JSON mode: {supports_json})")
+            
+            for attempt in range(self.max_retries):
+                try:
+                    # Base parameters for all models
+                    call_params = {
+                        "model": model_name,
+                        "messages": [
+                            {
+                                "role": "system", 
+                                "content": "You are an expert sales opportunity evaluator with 20+ years of enterprise experience. Use MEDDPICC and BANT frameworks to provide professional, detailed scoring with actionable insights."
+                            },
+                            {
+                                "role": "user",
+                                "content": self._adapt_prompt_for_model(prompt, model_name, is_batch)
+                            }
+                        ],
+                        "temperature": 0.3,  # Consistent scoring
+                        "max_tokens": 1000 if is_batch else 500  # More tokens for batch responses
+                    }
+                    
+                    # Conditional JSON mode support - only for compatible models and single scoring
+                    if not is_batch and self._supports_json_mode(model_name):
+                        call_params["response_format"] = {"type": "json_object"}
+                        logger.debug(f"🔧 Using JSON mode for {model_name}")
+                    else:
+                        logger.debug(f"🔧 Using text mode for {model_name} (batch={is_batch}, supports_json={supports_json})")
+                    
+                    response = self.client.chat.completions.create(**call_params)
+                    
+                    # Success! Update current model for future calls
+                    self.current_model = model_name
+                    logger.info(f"✅ Response generated successfully with {model_name} ({cost_tier} cost)")
+                    return response
+                    
+                except Exception as e:
+                    last_error = e
+                    error_str = str(e).lower()
+                    
+                    # Enhanced error detection for model incompatibility
+                    model_error_terms = ['model', 'unsupported', 'not found', 'quota', 'insufficient', 'response_format', 'json_object']
+                    if any(term in error_str for term in model_error_terms):
+                        logger.warning(f"⚠️ Model {model_name} failed (likely incompatible): {e}")
+                        break  # Try next model immediately
+                    
+                    # Otherwise, retry with same model
+                    if attempt < self.max_retries - 1:
+                        delay = self.base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        logger.warning(f"API call attempt {attempt + 1} for {model_name} failed: {e}. Retrying in {delay:.2f}s...")
+                        time.sleep(delay)
+                    else:
+                        logger.warning(f"All retry attempts failed for {model_name}: {e}")
+                        break  # Try next model
+        
+        # All models failed
+        raise RuntimeError(f"💸 All models in fallback chain failed! Last error: {last_error}")
+    
+    def _adapt_prompt_for_model(self, prompt: str, model_name: str, is_batch: bool) -> str:
+        """Adapt prompt based on model capabilities for better reliability"""
+        if not self._supports_json_mode(model_name) and not is_batch:
+            # For models without JSON mode, add stronger formatting instructions
+            prompt += "\n\nIMPORTANT: Respond with valid JSON only. Start with { and end with }. No markdown, no explanations outside the JSON."
+        
+        return prompt
 
     def score_opportunities_batch(self, opportunities_df, batch_size: Optional[int] = None, progress_callback=None):
         """Score multiple opportunities in batches with progress tracking"""
