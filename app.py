@@ -48,16 +48,34 @@ def main():
 
 def step1_generate_data():
     st.header("Step 1: Secure Synthetic Data Creation")
-    st.markdown("Generate 50 synthetic Salesforce opportunities with MEDDPICC fields")
+    st.markdown("Generate synthetic Salesforce opportunities with MEDDPICC fields")
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
+        # Dataset size configuration
+        st.subheader("Dataset Configuration")
+        dataset_size = st.select_slider(
+            "Number of opportunities to generate:",
+            options=[50, 100, 250, 500, 1000],
+            value=50,
+            help="Larger datasets will take longer to process but provide better analysis"
+        )
+        
+        batch_size = st.slider(
+            "Batch size for processing:",
+            min_value=10,
+            max_value=100,
+            value=50,
+            step=10,
+            help="Smaller batches use less memory but take more time"
+        )
+        
         if st.button("Generate Synthetic Opportunities", type="primary"):
-            with st.spinner("Generating secure synthetic data..."):
+            with st.spinner(f"Generating {dataset_size} synthetic opportunities..."):
                 try:
                     generator = SyntheticDataGenerator()
-                    df = generator.generate_opportunities(50)
+                    df = generator.generate_opportunities(dataset_size, batch_size=batch_size)
                     
                     # Store in session state
                     st.session_state['synthetic_data'] = df
@@ -143,9 +161,20 @@ def step2_ai_scoring():
         
         st.markdown("---")
         
+        # Batch processing configuration for scoring
+        st.subheader("Batch Scoring Configuration")
+        scoring_batch_size = st.slider(
+            "AI scoring batch size:",
+            min_value=5,
+            max_value=20,
+            value=10,
+            step=5,
+            help="Number of opportunities per batch (processed sequentially). Smaller batches are more reliable."
+        )
+        
         # Full scoring
         if st.button("🚀 Score All Opportunities", type="primary"):
-            full_scoring(df)
+            full_scoring(df, scoring_batch_size)
     
     with col2:
         st.info("""
@@ -190,39 +219,39 @@ def test_scoring(test_df):
             st.error(f"❌ Scoring error: {str(e)}")
             logger.error(f"Scoring error: {str(e)}")
 
-def full_scoring(df):
-    """Score all opportunities"""
-    with st.spinner("Scoring all 50 opportunities..."):
+def full_scoring(df, batch_size=10):
+    """Score all opportunities using batch processing"""
+    dataset_size = len(df)
+    with st.spinner(f"Scoring all {dataset_size} opportunities..."):
         try:
             scorer = OpportunityScorer()
             start_time = time.time()
             
-            results = []
+            # Create progress tracking
             progress_bar = st.progress(0)
             status_text = st.empty()
-            scoring_errors = 0
             
-            for i, row in df.iterrows():
-                status_text.text(f"Scoring opportunity {i+1}/50: {row['Opportunity_Name']}")
-                result = scorer.score_opportunity(row)
-                
-                # Check for scoring errors
-                if result['Score'] == 0 and "error" in result['Explanation'].lower():
-                    scoring_errors += 1
-                
-                results.append(result)
-                progress_bar.progress((i + 1) / len(df))
+            def progress_callback(completed, total):
+                progress_bar.progress(completed / total)
+                status_text.text(f"Scored {completed}/{total} opportunities ({(completed/total)*100:.1f}%)")
+            
+            # Use batch scoring
+            results, failed_count = scorer.score_opportunities_batch(
+                df, 
+                batch_size=batch_size, 
+                progress_callback=progress_callback
+            )
             
             end_time = time.time()
             runtime = end_time - start_time
             
             # Validate scoring results
-            if scoring_errors > len(df) * 0.5:  # More than 50% failed
-                st.error(f"❌ AI Scoring failed for {scoring_errors}/{len(df)} opportunities. Please check API key and try again.")
+            if failed_count > len(df) * 0.5:  # More than 50% failed
+                st.error(f"❌ AI Scoring failed for {failed_count}/{len(df)} opportunities. Please check API key and try again.")
                 st.warning("⚠️ Cannot generate reliable executive report with failed scoring results.")
                 return
-            elif scoring_errors > 0:
-                st.warning(f"⚠️ {scoring_errors}/{len(df)} opportunities had scoring issues, but proceeding with analysis.")
+            elif failed_count > 0:
+                st.warning(f"⚠️ {failed_count}/{len(df)} opportunities had scoring issues, but proceeding with analysis.")
             
             # Create results DataFrame
             results_df = pd.DataFrame(results)

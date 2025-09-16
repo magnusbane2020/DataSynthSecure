@@ -66,55 +66,63 @@ class SyntheticDataGenerator:
             "Trend Micro", "Palo Alto Networks", "Fortinet", "Check Point"
         ]
 
-    def generate_opportunities(self, count=50):
+    def generate_opportunities(self, count=50, batch_size=None):
         """Generate synthetic opportunities with MEDDPICC fields"""
         logger.info(f"Generating {count} synthetic opportunities")
         
+        # Set batch size for large datasets
+        if batch_size is None:
+            batch_size = min(100, count)  # Process in batches of 100 for large datasets
+        
         opportunities = []
         
-        for i in range(count):
-            # Basic opportunity data
-            company = random.choice(self.public_companies)
-            product = random.choice(self.crowdstrike_products)
+        for batch_start in range(0, count, batch_size):
+            batch_end = min(batch_start + batch_size, count)
+            logger.info(f"Processing batch {batch_start//batch_size + 1}/{(count-1)//batch_size + 1} ({batch_start+1}-{batch_end} of {count})")
             
-            # Generate unique opportunity name
-            opp_name = f"{company} - {product} Implementation"
-            
-            # Random dates
-            created_date = self.fake.date_between(start_date='-6M', end_date='today')
-            close_date = created_date + timedelta(days=random.randint(30, 180))
-            
-            # Amount (realistic enterprise security deals)
-            amount = random.choice([
-                random.randint(25000, 100000),    # SMB
-                random.randint(100000, 500000),   # Mid-market
-                random.randint(500000, 2000000)   # Enterprise
-            ])
-            
-            # Opportunity notes
-            notes = self._generate_opportunity_notes(company, product)
-            
-            opportunity = {
-                'Opportunity_ID': str(uuid.uuid4())[:8],
-                'Opportunity_Name': opp_name,
-                'Account': company,
-                'Amount': amount,
-                'Close_Date': close_date.strftime('%Y-%m-%d'),
-                'Stage': random.choice(self.stages),
-                'Owner': random.choice(self.sales_owners),
-                'Created_Date': created_date.strftime('%Y-%m-%d'),
-                'Product': product,
-                'Opportunity_Notes': notes
-            }
-            
-            # Add MEDDPICC fields for ~50% of opportunities
-            if random.random() < 0.5:
-                opportunity.update(self._generate_meddpicc_fields())
-            else:
-                # Partially populate to reflect reality
-                opportunity.update(self._generate_partial_meddpicc())
-            
-            opportunities.append(opportunity)
+            for i in range(batch_start, batch_end):
+                # Basic opportunity data
+                company = random.choice(self.public_companies)
+                product = random.choice(self.crowdstrike_products)
+                
+                # Generate unique opportunity name
+                opp_name = f"{company} - {product} Implementation"
+                
+                # Random dates
+                created_date = self.fake.date_between(start_date='-6M', end_date='today')
+                close_date = created_date + timedelta(days=random.randint(30, 180))
+                
+                # Amount (realistic enterprise security deals)
+                amount = random.choice([
+                    random.randint(25000, 100000),    # SMB
+                    random.randint(100000, 500000),   # Mid-market
+                    random.randint(500000, 2000000)   # Enterprise
+                ])
+                
+                # Opportunity notes
+                notes = self._generate_opportunity_notes(company, product)
+                
+                opportunity = {
+                    'Opportunity_ID': str(uuid.uuid4())[:8],
+                    'Opportunity_Name': opp_name,
+                    'Account': company,
+                    'Amount': amount,
+                    'Close_Date': close_date.strftime('%Y-%m-%d'),
+                    'Stage': random.choice(self.stages),
+                    'Owner': random.choice(self.sales_owners),
+                    'Created_Date': created_date.strftime('%Y-%m-%d'),
+                    'Product': product,
+                    'Opportunity_Notes': notes
+                }
+                
+                # Add MEDDPICC fields for ~50% of opportunities
+                if random.random() < 0.5:
+                    opportunity.update(self._generate_meddpicc_fields())
+                else:
+                    # Partially populate to reflect reality
+                    opportunity.update(self._generate_partial_meddpicc())
+                
+                opportunities.append(opportunity)
         
         df = pd.DataFrame(opportunities)
         logger.info(f"Successfully generated {len(df)} synthetic opportunities")
