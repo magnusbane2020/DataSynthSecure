@@ -13,6 +13,7 @@ from utils import setup_logging, validate_api_key
 from visualizations import display_interactive_visualizations
 from monitoring_dashboard import monitoring_dashboard
 from audit_trail import log_user_action, log_data_access, log_api_call, log_security_event, log_system_error
+from bias_dashboard import bias_dashboard
 
 # Configure logging with security filters
 setup_logging()
@@ -39,7 +40,7 @@ def main():
     st.sidebar.title("Analysis Steps")
     step = st.sidebar.radio(
         "Select Analysis Phase:",
-        ["Step 1: Generate Synthetic Data", "Step 2: AI Scoring", "Step 3: Interactive Visualizations", "Step 4: Executive Report", "Step 5: Audit Monitor"]
+        ["Step 1: Generate Synthetic Data", "Step 2: AI Scoring", "Step 3: Interactive Visualizations", "Step 4: Executive Report", "Step 5: Audit Monitor", "Step 6: Bias Detection"]
     )
     
     if step == "Step 1: Generate Synthetic Data":
@@ -52,6 +53,8 @@ def main():
         step3_executive_report()
     elif step == "Step 5: Audit Monitor":
         step5_audit_monitoring()
+    elif step == "Step 6: Bias Detection":
+        step6_bias_detection()
 
 def step1_generate_data():
     st.header("Step 1: Secure Synthetic Data Creation")
@@ -320,6 +323,41 @@ def step5_audit_monitoring():
         st.error(f"❌ Error loading audit monitoring dashboard: {str(e)}")
         logger.error(f"Audit monitoring error: {str(e)}")
         log_system_error("AUDIT_DASHBOARD_ERROR", {"error": str(e)})
+
+def step6_bias_detection():
+    """Step 6: AI Bias Detection and Fairness Monitoring"""
+    try:
+        # Log user access to bias detection
+        log_user_action("BIAS_DETECTION_ACCESSED", user_id="bias_analyst")
+        
+        # Check for required data
+        if 'synthetic_data' not in st.session_state:
+            st.warning("⚠️ No synthetic data found. Please complete Step 1: Generate Synthetic Data first.")
+            return
+        
+        if 'all_scores' not in st.session_state and 'test_scores' not in st.session_state:
+            st.warning("⚠️ No scoring results found. Please complete Step 2: AI Scoring first.")
+            return
+        
+        # Get scored data (prefer all_scores over test_scores)
+        scored_data = st.session_state.get('all_scores', st.session_state.get('test_scores'))
+        synthetic_data = st.session_state['synthetic_data']
+        
+        # Convert to DataFrame if needed
+        if isinstance(scored_data, list):
+            scored_data = pd.DataFrame(scored_data)
+        if not isinstance(synthetic_data, pd.DataFrame):
+            synthetic_data = pd.DataFrame(synthetic_data)
+        
+        # Display bias monitoring dashboard
+        bias_dashboard.display_bias_monitoring_dashboard(scored_data, synthetic_data)
+        
+        log_user_action("BIAS_DETECTION_VIEWED", user_id="bias_analyst")
+        
+    except Exception as e:
+        st.error(f"❌ Error loading bias detection dashboard: {str(e)}")
+        logger.error(f"Bias detection error: {str(e)}")
+        log_system_error("BIAS_DETECTION_ERROR", {"error": str(e)})
 
 def step3_executive_report():
     st.header("Step 4: Executive Business Recommendations")
