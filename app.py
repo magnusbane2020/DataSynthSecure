@@ -109,31 +109,36 @@ def step1_generate_data():
                     generator = SyntheticDataGenerator()
                     df = generator.generate_opportunities(dataset_size, batch_size=batch_size)
                     
-                    # Store in session state
-                    st.session_state['synthetic_data'] = df
+                    # 🔧 CRITICAL FIX: Reload data from database to get Opportunity_ID
+                    # The generator saves to DB but returns DataFrame without ID
+                    db_manager = get_db_manager()
+                    df_with_id = db_manager.load_synthetic_opportunities()
+                    
+                    # Store the complete data (with Opportunity_ID) in session state
+                    st.session_state['synthetic_data'] = df_with_id
                     
                     # Log data generation event
                     log_user_action("DATA_GENERATED", 
                                    user_id="data_generator",
-                                   details={"dataset_size": len(df), "batch_size": batch_size})
+                                   details={"dataset_size": len(df_with_id), "batch_size": batch_size})
                     
-                    st.success(f"✅ Generated {len(df)} synthetic opportunities")
-                    st.success(f"💾 Data saved to PostgreSQL database")
+                    st.success(f"✅ Generated {len(df_with_id)} synthetic opportunities")
+                    st.success(f"💾 Data saved to PostgreSQL database with Opportunity_ID")
                     
                     # Display first 5 rows for validation
                     st.subheader("Validation Preview (First 5 Rows)")
-                    st.dataframe(df.head(), use_container_width=True)
+                    st.dataframe(df_with_id.head(), use_container_width=True)
                     
                     # Security validation
                     st.info("🔒 **PII Validation**: All data is synthetic. No real customer information included.")
                     
                     # Save to CSV
                     csv_path = "synthetic_opportunities.csv"
-                    df.to_csv(csv_path, index=False)
+                    df_with_id.to_csv(csv_path, index=False)
                     st.success(f"💾 Data saved to {csv_path}")
                     
                     # Download button
-                    csv_data = df.to_csv(index=False)
+                    csv_data = df_with_id.to_csv(index=False)
                     st.download_button(
                         label="📥 Download CSV",
                         data=csv_data,

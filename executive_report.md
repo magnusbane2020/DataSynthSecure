@@ -1,8 +1,8 @@
-# CrowdStrike Executive Report: AI-Powered Opportunity Scoring Analysis
+# Executive Report: AI-Powered Opportunity Scoring Analysis
 
-**Report Date:** 2025-09-16  
+**Report Date:** 2025-09-17  
 **Classification:** Internal Use Only - Synthetic Data Analysis  
-**Prepared for:** CrowdStrike Leadership Team
+**Prepared for:** Leadership Team
 
 ---
 
@@ -11,10 +11,10 @@
 This report presents findings from a secure synthetic data pilot evaluating AI-powered opportunity scoring for sales pipeline optimization. The analysis demonstrates significant potential for improving deal qualification while maintaining strict cybersecurity and compliance standards.
 
 ### Key Findings
-- **Average Deal Score:** 0.0/100
-- **High-Quality Opportunities:** 0 deals (>70/100)
-- **MEDDPICC Impact:** nan% higher scores for complete MEDDPICC
-- **Performance:** 50 opportunities analyzed in N/A seconds
+- **Average Deal Score:** 73.3/100
+- **High-Quality Opportunities:** 1 deals (>70/100)
+- **MEDDPICC Impact:** 25.9% higher scores for complete MEDDPICC
+- **Performance:** 3 opportunities analyzed in N/A seconds
 
 ---
 
@@ -22,14 +22,14 @@ This report presents findings from a secure synthetic data pilot evaluating AI-p
 
 
 **Score Distribution:**
-- High Performers (70-100): 0 opportunities (0.0%)
+- High Performers (70-100): 1 opportunities (33.3%)
 - Medium Performers (40-69): Estimated 60-70% of pipeline
 - Low Performers (0-39): Requires immediate attention and re-qualification
 
 **Statistical Summary:**
-- Mean Score: 0.0/100
-- Median Score: 0.0/100
-- Standard Deviation: 0.0
+- Mean Score: 73.3/100
+- Median Score: 70.0/100
+- Standard Deviation: 10.4
 
 **Key Insight:** The score distribution indicates a healthy pipeline with clear differentiation between high-quality and low-quality opportunities, enabling focused resource allocation.
 
@@ -40,11 +40,11 @@ This report presents findings from a secure synthetic data pilot evaluating AI-p
 
 
 **MEDDPICC Completion Impact:**
-- Complete MEDDPICC: 0.0 average score
-- Incomplete MEDDPICC: 0.0 average score
-- Performance Differential: +nan% for complete qualification
+- Complete MEDDPICC: 85.0 average score
+- Incomplete MEDDPICC: 67.5 average score
+- Performance Differential: +25.9% for complete qualification
 
-**Current Completion Rate:** 68.0% of opportunities have complete MEDDPICC
+**Current Completion Rate:** 33.3% of opportunities have complete MEDDPICC
 
 **Critical Success Factors:**
 1. **Economic Buyer Identification:** Highest correlation with deal closure
