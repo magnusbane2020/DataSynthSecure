@@ -315,14 +315,14 @@ def display_interactive_visualizations():
     
     # Check for data availability
     scores_df = st.session_state.get('all_scores', st.session_state.get('test_scores'))
-    synthetic_df = st.session_state.get('synthetic_data')
+    synthetic_df = st.session_state.get('active_dataset')
     
     if scores_df is None:
         st.warning("⚠️ Please complete AI scoring in Step 2 to view visualizations.")
         return
     
     if synthetic_df is None:
-        st.warning("⚠️ Please generate synthetic data in Step 1 to view complete visualizations.")
+        st.warning("⚠️ Please select an active dataset in Step 1 to view complete visualizations.")
     
     # Initialize visualizer
     visualizer = OpportunityVisualizer()

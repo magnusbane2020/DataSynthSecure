@@ -31,6 +31,10 @@ def main():
     st.title("📊 Enterprise Sales Opportunity Scoring System")
     st.markdown("**Secure Synthetic Salesforce Opportunity Data Generator with AI-Powered Scoring**")
     
+    # Initialize session state for active dataset management
+    if "active_dataset" not in st.session_state:
+        st.session_state["active_dataset"] = None
+    
     # Initialize database
     if not init_database():
         st.error("❌ Database connection failed. Please check your configuration.")
@@ -114,8 +118,13 @@ def step1_generate_data():
                     db_manager = get_db_manager()
                     df_with_id = db_manager.load_synthetic_opportunities()
                     
+                    # Get only the newly generated opportunities (last dataset_size rows)
+                    newly_generated = df_with_id.tail(dataset_size).copy()
+                    
                     # Store the complete data (with Opportunity_ID) in session state
                     st.session_state['synthetic_data'] = df_with_id
+                    # Set active dataset to only the newly generated opportunities
+                    st.session_state['active_dataset'] = newly_generated
                     
                     # Log data generation event
                     log_user_action("DATA_GENERATED", 
@@ -172,7 +181,9 @@ def step1_generate_data():
                 df = db_manager.load_synthetic_opportunities()
                 if not df.empty:
                     st.session_state['synthetic_data'] = df
-                    st.success(f"✅ Loaded {len(df)} opportunities from database")
+                    # Set active dataset to ALL data from database
+                    st.session_state['active_dataset'] = df
+                    st.success(f"✅ Loaded {len(df)} opportunities from database (set as active dataset)")
                 else:
                     st.warning("No data found in database. Generate some data first!")
             except Exception as e:
@@ -189,10 +200,10 @@ def step1_generate_data():
         except:
             pass
     
-    # Display existing data if available
-    if 'synthetic_data' in st.session_state:
-        st.subheader("Current Dataset Overview")
-        df = st.session_state['synthetic_data']
+    # Display active dataset if available
+    if st.session_state['active_dataset'] is not None:
+        st.subheader("Active Dataset Overview")
+        df = st.session_state['active_dataset']
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -208,21 +219,11 @@ def step2_ai_scoring():
     st.header("Step 2: Secure AI Assessment & Scoring")
     st.markdown("Evaluate opportunities using OpenAI with secure API key handling")
     
-    # Check for synthetic data (try loading from database if not in session)
-    if 'synthetic_data' not in st.session_state:
-        try:
-            db_manager = get_db_manager()
-            df = db_manager.load_synthetic_opportunities()
-            if not df.empty:
-                st.session_state['synthetic_data'] = df
-                st.info(f"✅ Automatically loaded {len(df)} opportunities from database")
-            else:
-                st.warning("⚠️ Please generate synthetic data in Step 1 first.")
-                return
-        except Exception as e:
-            st.warning("⚠️ Please generate synthetic data in Step 1 first.")
-            logger.error(f"Failed to auto-load data: {str(e)}")
-            return
+    # Check for active dataset
+    if st.session_state['active_dataset'] is None:
+        st.warning("⚠️ No active dataset selected. Please generate or load data in Step 1 first.")
+        st.info("📊 Use 'Generate Synthetic Opportunities' for 50 opportunities or 'Load Latest Data' for full database.")
+        return
     
     # API key validation
     api_key_status = validate_api_key()
@@ -233,7 +234,7 @@ def step2_ai_scoring():
     
     st.success("✅ API key validated (securely stored in environment)")
     
-    df = st.session_state['synthetic_data']
+    df = st.session_state['active_dataset']
     
     col1, col2 = st.columns([2, 1])
     
@@ -445,8 +446,8 @@ def step6_bias_detection():
         log_user_action("BIAS_DETECTION_ACCESSED", user_id="bias_analyst")
         
         # Check for required data
-        if 'synthetic_data' not in st.session_state:
-            st.warning("⚠️ No synthetic data found. Please complete Step 1: Generate Synthetic Data first.")
+        if st.session_state['active_dataset'] is None:
+            st.warning("⚠️ No active dataset found. Please complete Step 1: Generate or Load Data first.")
             return
         
         if 'all_scores' not in st.session_state and 'test_scores' not in st.session_state:
@@ -455,7 +456,7 @@ def step6_bias_detection():
         
         # Get scored data (prefer all_scores over test_scores)
         scored_data = st.session_state.get('all_scores', st.session_state.get('test_scores'))
-        synthetic_data = st.session_state['synthetic_data']
+        synthetic_data = st.session_state['active_dataset']
         
         # Convert to DataFrame if needed
         if isinstance(scored_data, list):
@@ -489,7 +490,7 @@ def step3_executive_report():
     
     # Use available scores
     scores_df = st.session_state.get('all_scores', st.session_state.get('test_scores'))
-    synthetic_df = st.session_state.get('synthetic_data')
+    synthetic_df = st.session_state.get('active_dataset')
     
     # Validate scores before generating report
     if scores_df is not None and len(scores_df) > 0:
