@@ -1,0 +1,26 @@
+# Core
+python-dotenv
+streamlit
+
+# Data handling
+pandas
+numpy
+sqlalchemy
+sqlite-utils
+
+# Visualization
+matplotlib
+seaborn
+plotly
+
+# Machine Learning / AI
+scikit-learn
+openai
+
+# Utilities
+tqdm
+requests
+
+# Optional - for PDF/Markdown reports
+markdown
+reportlab
