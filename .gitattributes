@@ -1,0 +1,20 @@
+# Default: folosește LF pentru toate fișierele text
+* text=auto eol=lf
+
+# Păstrează CRLF doar pentru fișiere Windows (batch, cmd)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts și Python → întotdeauna LF
+*.sh text eol=lf
+*.py text eol=lf
+
+# Markdown și config files → LF
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# CSV și loguri → LF (pentru compatibilitate în Linux)
+*.csv text eol=lf
+*.log text eol=lf
